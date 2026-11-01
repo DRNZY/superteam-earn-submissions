@@ -1,0 +1,38 @@
+{
+  "name": "multihopper-router",
+  "version": "1.0.0",
+  "description": "Clean Solana transfer & multi-hop routing tool with TRM Labs compliance and fee revenue accounting",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "multihopper": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "router": "node --import tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "solana",
+    "multihopper",
+    "routing",
+    "privacy",
+    "unbundling",
+    "trm-labs",
+    "earn"
+  ],
+  "author": "Superteam Earn Builder",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^6.0.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
