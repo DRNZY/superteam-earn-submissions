@@ -64,6 +64,7 @@ Expected output:
 ✔ derives volume from builder fee correctly according to MultiHopper formula
 ✔ approves clean Solana public keys
 ✔ blocks known sanctioned addresses and returns risk flags
+✔ dynamically registers custom blacklisted addresses
 ✔ plans a standard 2-hop route with unique ephemeral keys
 ✔ rejects transfers below minimum safe routing threshold for rent exemption
 ✔ fails route planning if destination is on the TRM sanction list
@@ -72,6 +73,10 @@ Expected output:
 ✔ simulates end-to-end execution and updates volume tracker
 ✔ marks qualification true when volume surpasses $100,000 threshold
 ✔ creates an unbundled multi-send plan with accurate gross and fee tallies
+✔ builds transactions and executes multi-send simulation with distinct ephemeral hops
+✔ verifies exact sequential forward amount conservation across 3 hops
+✔ plans and builds transactions at exact boundary threshold across 5 hops
+✔ applies custom builder and protocol treasury overrides
 ```
 
 ## CLI Usage
@@ -100,7 +105,19 @@ node dist/cli.js simulate \
   --hops 2
 ```
 
-### 3. Screen an Address for Compliance
+### 3. Plan and Simulate an Unbundled Multi-Send
+
+Distribute funds across multiple recipients through independent ephemeral paths:
+
+```bash
+node dist/cli.js multisend \
+  --source 7vBCEUNdZD9WoNmpR6Hp6sLiETgsbq4Gc3eBc5Tjv76d \
+  --recipients q3xodrtcvjH8NfPLMAQbRWqUXW9iH9qd8VxbhqWMiHb:2.5 7vBCEUNdZD9WoNmpR6Hp6sLiETgsbq4Gc3eBc5Tjv76d:3.0 \
+  --hops 2 \
+  --execute
+```
+
+### 4. Screen an Address for Compliance
 
 Run a standalone check against the TRM Labs screening engine:
 
@@ -108,7 +125,7 @@ Run a standalone check against the TRM Labs screening engine:
 node dist/cli.js compliance --address OFACBlocklistSimulatedWalletAddress11111111
 ```
 
-### 4. Check Volume and Revenue Metrics
+### 5. Check Volume and Revenue Metrics
 
 Display cumulative routed volume, builder yield, and bounty qualification status:
 
@@ -118,7 +135,7 @@ node dist/cli.js volume --price 180
 
 ## Economic Model and Volume Generation
 
-MultiHopper aligns incentives between protocol adoption and builder revenue:
+MultiHopper matches builder revenue directly to protocol routing volume:
 
 | Metric | Value | Details |
 | :--- | :--- | :--- |
@@ -130,7 +147,7 @@ MultiHopper aligns incentives between protocol adoption and builder revenue:
 
 ### How This Tool Drives On-Chain Volume
 
-1. **Treasury Management and OTC Settlement:** Teams moving funds between operational wallets or executing private settlements use the router to avoid telegraphing wallet balances to market scrapers.
+1. **Treasury Operations and OTC Settlement:** Teams moving funds between operational wallets or executing private settlements use the router to avoid telegraphing wallet balances to market scrapers.
 2. **Launch Payout Unbundling:** Project teams distributing tokens to advisors, seed contributors, or winners use `planMultiSend` to prevent third parties from clustering community addresses into single graph entities.
 3. **Automated Bots and Yield Rebalancing:** Trading algorithms and autonomous agents route periodic profit distributions through MultiHopper to detach strategy execution from cold storage reserves.
 
@@ -138,4 +155,4 @@ MultiHopper aligns incentives between protocol adoption and builder revenue:
 
 - **Non-Custodial Design:** Intermediate accounts are generated per transfer and funded with the exact transfer balance plus transaction gas. No pooled vaults or shared liquidity contracts hold user funds.
 - **Rent Exemption Enforcement:** The router enforces a minimum amount per hop so ephemeral accounts never get wiped by Solana runtime garbage collection before forwarding funds.
-- **Regulatory Compliance:** Built-in TRM Labs screening prevents routing to or from sanctioned entities, keeping integrations aligned with international compliance requirements.
+- **Regulatory Compliance:** Built-in TRM Labs screening prevents routing to or from sanctioned entities, meeting international compliance standards.

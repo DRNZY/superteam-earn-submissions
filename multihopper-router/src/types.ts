@@ -27,6 +27,8 @@ export interface RoutePlan {
   totalFeeLamports: bigint;
   builderFeeLamports: bigint;
   protocolFeeLamports: bigint;
+  networkFeeLamports: bigint;
+  totalPayerCostLamports: bigint;
   builderTreasury: PublicKey;
   protocolTreasury: PublicKey;
   hops: HopDefinition[];
@@ -47,8 +49,21 @@ export interface MultiSendPlan {
   totalFeeLamports: bigint;
   builderFeeLamports: bigint;
   protocolFeeLamports: bigint;
+  networkFeeLamports: bigint;
+  totalPayerCostLamports: bigint;
   hopsPerRecipient: number;
+  routes: RoutePlan[];
   createdAt: number;
+}
+
+export interface MultiSendExecutionResult {
+  multiSendId: string;
+  success: boolean;
+  routeResults: RouteExecutionResult[];
+  totalLamportsRouted: bigint;
+  totalBuilderYieldLamports: bigint;
+  durationMs: number;
+  error?: string;
 }
 
 export interface ComplianceReport {

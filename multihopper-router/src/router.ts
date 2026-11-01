@@ -11,6 +11,7 @@ import { TRMComplianceEngine } from './compliance.js';
 import { FeeCalculator, VolumeTracker } from './fee.js';
 import {
   HopDefinition,
+  MultiSendExecutionResult,
   MultiSendPlan,
   MultiSendRecipient,
   RouteConfig,
@@ -68,6 +69,8 @@ export class MultiHopperRouter {
 
     // Calculate exact fee splits (0.50% total: 0.25% builder, 0.25% protocol)
     const fee = FeeCalculator.calculateFee(config.amountLamports);
+    const networkFeeLamports = MultiHopperRouter.TX_FEE_LAMPORTS * BigInt(hopCount);
+    const totalPayerCostLamports = config.amountLamports + networkFeeLamports;
 
     const jitterMin = config.jitterMinMs ?? 150;
     const jitterMax = config.jitterMaxMs ?? 600;
@@ -76,10 +79,12 @@ export class MultiHopperRouter {
     for (let i = 0; i < hopCount; i++) {
       const ephemeral = await Keypair.generate();
       const delayMs = Math.floor(Math.random() * (jitterMax - jitterMin + 1)) + jitterMin;
+      const remainingHopsAfterThis = BigInt(hopCount - 1 - i);
+      const forwardLamports = fee.netTransferLamports + (MultiHopperRouter.TX_FEE_LAMPORTS * remainingHopsAfterThis);
       hops.push({
         hopIndex: i + 1,
         ephemeralKeypair: ephemeral,
-        amountLamports: fee.netTransferLamports,
+        amountLamports: forwardLamports,
         delayMs
       });
     }
@@ -93,6 +98,8 @@ export class MultiHopperRouter {
       totalFeeLamports: fee.totalFeeLamports,
       builderFeeLamports: fee.builderFeeLamports,
       protocolFeeLamports: fee.protocolFeeLamports,
+      networkFeeLamports,
+      totalPayerCostLamports,
       builderTreasury: config.builderTreasury ?? this.builderTreasury,
       protocolTreasury: config.protocolTreasury ?? this.protocolTreasury,
       hops,
@@ -114,19 +121,32 @@ export class MultiHopperRouter {
       throw new Error('MultiSend requires at least one recipient');
     }
 
+    await this.compliance.screenAddress(source);
+
     let grossLamports = 0n;
+    const routes: RoutePlan[] = [];
+
     for (const r of recipients) {
       if (r.amountLamports <= 0n) {
         throw new Error('Each recipient amount must be positive');
       }
       grossLamports += r.amountLamports;
-      // Screen each recipient
-      await this.compliance.screenAddress(r.destination);
+      const route = await this.planRoute({
+        source,
+        destination: r.destination,
+        amountLamports: r.amountLamports,
+        hopCount: hopsPerRecipient,
+        builderTreasury: this.builderTreasury,
+        protocolTreasury: this.protocolTreasury
+      });
+      routes.push(route);
     }
 
-    await this.compliance.screenAddress(source);
-
     const fee = FeeCalculator.calculateFee(grossLamports);
+    let totalNetworkFee = 0n;
+    for (const route of routes) {
+      totalNetworkFee += route.networkFeeLamports;
+    }
 
     return {
       id: `mh-multisend-${crypto.randomUUID().slice(0, 8)}`,
@@ -137,7 +157,10 @@ export class MultiHopperRouter {
       totalFeeLamports: fee.totalFeeLamports,
       builderFeeLamports: fee.builderFeeLamports,
       protocolFeeLamports: fee.protocolFeeLamports,
+      networkFeeLamports: totalNetworkFee,
+      totalPayerCostLamports: grossLamports + totalNetworkFee,
       hopsPerRecipient,
+      routes,
       createdAt: Date.now()
     };
   }
@@ -154,18 +177,19 @@ export class MultiHopperRouter {
 
     // Tx 0: Initial Funding & Fee Disbursement
     const firstHop = plan.hops[0];
-    const initialHopFunding = plan.netTransferLamports + (MultiHopperRouter.TX_FEE_LAMPORTS * BigInt(plan.hops.length));
+    const initialHopFunding = firstHop.amountLamports + MultiHopperRouter.TX_FEE_LAMPORTS;
 
-    const initialTx = new Transaction();
-    (initialTx as any).recentBlockhash = recentBlockhash;
-    initialTx.feePayer = payer.publicKey;
+    const initialTx = new Transaction({
+      recentBlockhash: recentBlockhash as any,
+      feePayer: payer.publicKey
+    });
 
     // Transfer principal to first ephemeral hop
     initialTx.add(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: firstHop.ephemeralKeypair.publicKey,
-        lamports: Number(initialHopFunding)
+        lamports: initialHopFunding
       })
     );
 
@@ -175,7 +199,7 @@ export class MultiHopperRouter {
         SystemProgram.transfer({
           fromPubkey: payer.publicKey,
           toPubkey: plan.builderTreasury,
-          lamports: Number(plan.builderFeeLamports)
+          lamports: plan.builderFeeLamports
         })
       );
     }
@@ -186,7 +210,7 @@ export class MultiHopperRouter {
         SystemProgram.transfer({
           fromPubkey: payer.publicKey,
           toPubkey: plan.protocolTreasury,
-          lamports: Number(plan.protocolFeeLamports)
+          lamports: plan.protocolFeeLamports
         })
       );
     }
@@ -200,18 +224,16 @@ export class MultiHopperRouter {
       const isLastHop = i === plan.hops.length - 1;
       const targetPubkey = isLastHop ? plan.destination : plan.hops[i + 1].ephemeralKeypair.publicKey;
 
-      const remainingHopsAfterThis = BigInt(plan.hops.length - 1 - i);
-      const forwardLamports = plan.netTransferLamports + (MultiHopperRouter.TX_FEE_LAMPORTS * remainingHopsAfterThis);
-
-      const hopTx = new Transaction();
-      (hopTx as any).recentBlockhash = recentBlockhash;
-      hopTx.feePayer = currentHop.ephemeralKeypair.publicKey;
+      const hopTx = new Transaction({
+        recentBlockhash: recentBlockhash as any,
+        feePayer: currentHop.ephemeralKeypair.publicKey
+      });
 
       hopTx.add(
         SystemProgram.transfer({
           fromPubkey: currentHop.ephemeralKeypair.publicKey,
           toPubkey: targetPubkey,
-          lamports: Number(forwardLamports)
+          lamports: currentHop.amountLamports
         })
       );
 
@@ -324,6 +346,68 @@ export class MultiHopperRouter {
         builderYieldLamports: 0n,
         error: message,
         durationMs: Date.now() - startTime
+      };
+    }
+  }
+
+  /**
+   * Builds transactions for all recipients in an unbundled multi-send plan.
+   */
+  public async buildMultiSendTransactions(
+    plan: MultiSendPlan,
+    payer: Keypair,
+    recentBlockhash: string = '11111111111111111111111111111111'
+  ): Promise<Transaction[][]> {
+    const multiSendTxs: Transaction[][] = [];
+    for (const route of plan.routes) {
+      const txs = await this.buildTransactions(route, payer, recentBlockhash);
+      multiSendTxs.push(txs);
+    }
+    return multiSendTxs;
+  }
+
+  /**
+   * Executes all routes in an unbundled multi-send plan.
+   */
+  public async executeMultiSend(
+    plan: MultiSendPlan,
+    payer: Keypair,
+    simulateOnly: boolean = true
+  ): Promise<MultiSendExecutionResult> {
+    const startTime = Date.now();
+    const routeResults: RouteExecutionResult[] = [];
+    let totalRouted = 0n;
+    let totalYield = 0n;
+
+    try {
+      for (const route of plan.routes) {
+        const res = await this.executeRoute(route, payer, simulateOnly);
+        routeResults.push(res);
+        if (!res.success) {
+          throw new Error(`MultiSend failed at route ${route.id}: ${res.error}`);
+        }
+        totalRouted += res.totalLamportsRouted;
+        totalYield += res.builderYieldLamports;
+      }
+
+      return {
+        multiSendId: plan.id,
+        success: true,
+        routeResults,
+        totalLamportsRouted: totalRouted,
+        totalBuilderYieldLamports: totalYield,
+        durationMs: Date.now() - startTime
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        multiSendId: plan.id,
+        success: false,
+        routeResults,
+        totalLamportsRouted: totalRouted,
+        totalBuilderYieldLamports: totalYield,
+        durationMs: Date.now() - startTime,
+        error: message
       };
     }
   }

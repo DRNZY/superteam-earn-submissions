@@ -233,6 +233,98 @@ describe('MultiHopper Router Test Suite', () => {
       assert.equal(plan.grossAmountLamports, 5n * BigInt(LAMPORTS_PER_SOL));
       assert.equal(plan.totalFeeLamports, 25_000_000n); // 0.50% of 5 SOL
       assert.equal(plan.recipients.length, 2);
+      assert.equal(plan.routes.length, 2);
+    });
+
+    it('builds transactions and executes multi-send simulation with distinct ephemeral hops', async () => {
+      const router = new MultiHopperRouter();
+      const payer = await Keypair.generate();
+      const rec1 = (await Keypair.generate()).publicKey;
+      const rec2 = (await Keypair.generate()).publicKey;
+
+      const plan = await router.planMultiSend(payer.publicKey, [
+        { destination: rec1, amountLamports: 1n * BigInt(LAMPORTS_PER_SOL) },
+        { destination: rec2, amountLamports: 2n * BigInt(LAMPORTS_PER_SOL) }
+      ]);
+
+      const txGroups = await router.buildMultiSendTransactions(plan, payer);
+      assert.equal(txGroups.length, 2);
+
+      const execResult = await router.executeMultiSend(plan, payer, true);
+      assert.equal(execResult.success, true);
+      assert.equal(execResult.routeResults.length, 2);
+      assert.equal(execResult.totalLamportsRouted, 3n * BigInt(LAMPORTS_PER_SOL));
+      assert.equal(execResult.totalBuilderYieldLamports, 7_500_000n);
+    });
+  });
+
+  describe('Edge Cases and Treasury Overrides', () => {
+    it('verifies exact sequential forward amount conservation across 3 hops', async () => {
+      const router = new MultiHopperRouter();
+      const source = (await Keypair.generate()).publicKey;
+      const destination = (await Keypair.generate()).publicKey;
+      const gross = 10n * BigInt(LAMPORTS_PER_SOL);
+
+      const plan = await router.planRoute({
+        source,
+        destination,
+        amountLamports: gross,
+        hopCount: 3
+      });
+
+      assert.equal(plan.hops.length, 3);
+      // Net transfer after 0.5% fee on 10 SOL is 9.95 SOL (9,950,000,000 lamports)
+      const net = 9_950_000_000n;
+      assert.equal(plan.netTransferLamports, net);
+      // Hop 1 forwards net + 2 * 5000 = 9,950,010,000
+      assert.equal(plan.hops[0].amountLamports, net + 10000n);
+      // Hop 2 forwards net + 1 * 5000 = 9,950,005,000
+      assert.equal(plan.hops[1].amountLamports, net + 5000n);
+      // Hop 3 (final) forwards net = 9,950,000,000
+      assert.equal(plan.hops[2].amountLamports, net);
+    });
+
+    it('plans and builds transactions at exact boundary threshold across 5 hops', async () => {
+      const router = new MultiHopperRouter();
+      const payer = await Keypair.generate();
+      const destination = (await Keypair.generate()).publicKey;
+      const hopCount = 5;
+      const minRequired = (MultiHopperRouter.MIN_RENT_EXEMPT_LAMPORTS + MultiHopperRouter.TX_FEE_LAMPORTS) * BigInt(hopCount + 1);
+      const boundaryAmount = minRequired + 1n;
+
+      const plan = await router.planRoute({
+        source: payer.publicKey,
+        destination,
+        amountLamports: boundaryAmount,
+        hopCount
+      });
+
+      assert.equal(plan.hops.length, 5);
+      const txs = await router.buildTransactions(plan, payer);
+      // 1 initial funding tx + 5 hop txs = 6 transactions
+      assert.equal(txs.length, 6);
+
+      const result = await router.executeRoute(plan, payer, true);
+      assert.equal(result.success, true);
+    });
+
+    it('applies custom builder and protocol treasury overrides', async () => {
+      const router = new MultiHopperRouter();
+      const source = (await Keypair.generate()).publicKey;
+      const destination = (await Keypair.generate()).publicKey;
+      const customBuilder = (await Keypair.generate()).publicKey;
+      const customProtocol = (await Keypair.generate()).publicKey;
+
+      const plan = await router.planRoute({
+        source,
+        destination,
+        amountLamports: 5n * BigInt(LAMPORTS_PER_SOL),
+        builderTreasury: customBuilder,
+        protocolTreasury: customProtocol
+      });
+
+      assert.equal(plan.builderTreasury.toBase58(), customBuilder.toBase58());
+      assert.equal(plan.protocolTreasury.toBase58(), customProtocol.toBase58());
     });
   });
 });

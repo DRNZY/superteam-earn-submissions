@@ -1,111 +1,83 @@
-# Mojo AI and $CHIMP Fair Launch: Technical Thread Breakdown
+# Mojo AI and $CHIMP fair launch: technical thread breakdown
 
 **Target Submission:** Superteam Earn ChimpX Bounty  
 **Account Tags Required:** @chimpxAI, @solana, @Raydium  
 **Target Format:** 8-Tweet High-Signal Analysis  
 **Output Path:** `/home/drnzy/Projects/superteam-earn-submissions/chimpx-thread/thread.md`  
 
----
+### Tweet 1: The problem with standard token launches
 
-### Tweet 1 (Hook / The Problem with Standard Token Launches)
+Most token launches punish regular users. Snipers take block-0 liquidity, insiders sell private discount allocations, and retail buyers buy into an escalating bonding curve. 
 
-Most token launches punish regular users. Snipers take block-0 liquidity, insiders dump private discount allocations, and retail participants buy the top of an artificially steep bonding curve. 
+After three years of product development, @chimpxAI is launching $CHIMP on @Raydium using a pro-rata fair launch model on @solana. The mechanics protect public buyers from structural disadvantages.
 
-After three years of product engineering, @chimpxAI is launching $CHIMP on @Raydium using a pro-rata fair launch model on @solana. 
+### Tweet 2: Product traction and execution utility
 
-Here is how the mechanics work and why the architecture protects public buyers. 🧵👇
+DeFi execution on @solana often forces users to manage RPC routes, priority fee multipliers, and manual slippage settings. 
 
----
+Mojo AI by @chimpxAI turns multi-step transactions into plain language prompts. You state what you want executed, and the agent constructs and routes the transactions on-chain. 
 
-### Tweet 2 (Product Traction and Problem Solved)
+Live metrics to date:
+• 56,000 active wallets
+• 1,000,000 completed requests
+• $3.9M volume routed through the interface
 
-Before looking at the token, look at the utility. 
+### Tweet 3: The Raydium fair launch model
 
-DeFi execution on @solana still forces users to juggle RPC routes, priority fee multipliers, and manual slippage settings. 
+$CHIMP launches directly through a fair sale format on @Raydium.
 
-Mojo AI by @chimpxAI turns complex transactions into plain language. You type what you want done, and the agent executes the on-chain route. 
+The sale operates on two rules:
+1. A soft cap establishes the baseline token valuation. Reaching the cap ensures the pool has enough liquidity backing to launch.
+2. If total deposits exceed the raise target, every participant receives an exact pro-rata allocation based on their share of the pool.
 
-The traction numbers:
-• 56,000+ active wallets
-• 1,000,000+ completed requests
-• $3.9M+ volume routed through the interface
+### Tweet 4: Pro-rata distribution mechanics
 
-No vaporware. The product is live and running.
+Pro-rata allocation removes the rush to deposit in early slots.
 
----
+If a pool targets 5,000 SOL and receives 15,000 SOL in total commitments, it is 3x oversubscribed.
 
-### Tweet 3 (The Raydium Fair Launch Model)
-
-Instead of spinning up a private presale or a bot-dominated pool, $CHIMP launches directly through a fair sale format on @Raydium.
-
-The structure uses two clear rules:
-1. A soft cap guarantees the baseline token valuation. Reaching the cap ensures the project has sufficient liquidity backing to proceed.
-2. If demand exceeds the raise target, every buyer receives an exact pro-rata allocation.
-
-Nobody gets priced out by an escalating bonding curve.
-
----
-
-### Tweet 4 (Pro-Rata Math: Why Nobody Overpays)
-
-Here is why pro-rata distribution eliminates the whale advantage.
-
-Suppose a public pool raises 5,000 SOL, but receives 15,000 SOL in total commitments (3x oversubscribed).
-
-Under a standard rush model, late buyers pay 3x the opening price. 
-
-Under the $CHIMP pro-rata model:
+Under this structure:
 • You receive 33.3% of your requested $CHIMP tokens at the fixed initial price.
-• The remaining 66.7% of your deposited SOL returns to your wallet automatically.
+• The remaining 66.7% of your deposited SOL returns to your wallet when the pool closes.
 
-The unit price remains stable regardless of oversubscription.
+Participants pay the same unit price regardless of how heavily the pool is oversubscribed.
 
----
+### Tweet 5: MEV snipe neutralization
 
-### Tweet 5 (Zero MEV Snipe Advantage)
+On standard DEX liquidity pool launches, MEV searchers pay priority tips to land transactions in the first 400ms leader slot.
 
-On standard DEX pool launches, MEV searchers pay high Jito tips to insert transactions into the first 400ms leader slot, front-running everyone else.
+The $CHIMP fair launch eliminates this advantage:
+• The deposit window remains open for a set duration.
+• Allocations depend on final pool share, not arrival timestamp.
+• Block-0 snipers pay the same unit price as someone depositing hours later.
 
-The $CHIMP fair launch neutralizes this vector completely:
-• The deposit window stays open for a defined duration.
-• Your allocation depends on your share of the total pool, not the millisecond your transaction arrives.
-• Block-0 snipers gain zero pricing advantage over participants who deposit hours later.
+### Tweet 6: Token supply and unlock terms
 
----
-
-### Tweet 6 (Tokenomics Breakdown)
-
-The supply structure prioritizes community float over insider unlocks:
+The token distribution gives priority to community float over team allocations:
 
 • Total Supply: 1,000,000,000 $CHIMP (fixed cap)
 • Public Fair Sale: 75,000,000 $CHIMP (7.5%)
-• Community Float: 50% reserved for user rewards, HOOTs incentives, and ecosystem airdrops
-• Team and Advisors: 100% locked at launch with long-term vesting schedules
+• Community Float: 50% for rewards, HOOTs incentives, and ecosystem distributions
+• Team and Advisors: 100% locked at launch with linear vesting schedules
 
-Key operational rule: Public sale participants receive 100% of their purchased tokens unlocked on day one. No vesting locks or drip schedules for the public.
+Public sale participants receive 100% of their purchased tokens unlocked on day one, without vesting locks or drip schedules.
 
----
+### Tweet 7: Application utility and HOOTs rewards
 
-### Tweet 7 (Ecosystem Utility and HOOTs Rewards)
+Inside Mojo AI, $CHIMP is the utility token:
+• Offsets network and platform fees on multi-hop agent executions
+• Unlocks high-frequency autonomous trading strategies
+• Applies multipliers to HOOTs reward points earned from daily tasks
 
-What does holding $CHIMP do inside the application?
+On-chain agent usage creates recurring demand tied directly to product execution volume on @solana.
 
-Inside Mojo AI, $CHIMP serves as the native utility asset:
-• Gas and fee offsets on complex multi-hop agent executions
-• Tiered access to high-frequency autonomous trading strategies
-• Direct conversion and multipliers for HOOTs reward points earned through daily task completions
+### Tweet 8: Contract verification and safety
 
-As on-chain trading activity increases across @solana, agent usage drives recurrent token demand within the product.
+Token launches attract copycat contracts and fraudulent pools. Verify contract addresses through official project channels:
 
----
-
-### Tweet 8 (Safety Rules and Official Verification)
-
-During any public token launch, impersonator accounts and fake pools appear rapidly. Protect your capital by following strict verification habits:
-
-1. Never trade on unverified Raydium pool links posted in comments or direct messages.
-2. Official portal: https://chimpx.ai
-3. Official documentation: https://docs.chimpx.ai
+1. Trade only on verified Raydium pool links confirmed through official channels.
+2. Project portal: https://chimpx.ai
+3. Project documentation: https://docs.chimpx.ai
 4. Official announcements: @chimpxai
 
-The $CHIMP fair launch on @Raydium gives @solana builders a transparent launch template based on real software and verified volume.
+The launch pairs live software with verified on-chain metrics, offering a transparent blueprint for Solana builders.
